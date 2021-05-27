@@ -6,15 +6,15 @@ import (
 	"time"
 )
 
-type Logstash struct {
+type Client struct {
 	hostname   string
 	port       int
 	connection *net.TCPConn
 	timeout    int
 }
 
-func New(hostname string, port int, timeout int) *Logstash {
-	l := Logstash{}
+func New(hostname string, port int, timeout int) *Client {
+	l := Client{}
 	l.hostname = hostname
 	l.port = port
 	l.connection = nil
@@ -22,7 +22,7 @@ func New(hostname string, port int, timeout int) *Logstash {
 	return &l
 }
 
-func (l *Logstash) Connect() error {
+func (l *Client) Connect() error {
 	var connection *net.TCPConn
 	addr, err := net.ResolveTCPAddr("tcp", fmt.Sprintf("%s:%d", l.hostname, l.port))
 	if err != nil {
@@ -61,7 +61,7 @@ func (l *Logstash) Connect() error {
 	return nil
 }
 
-func (l *Logstash) setTimeouts() error {
+func (l *Client) setTimeouts() error {
 	timeout := time.Now().Add(time.Duration(l.timeout) * time.Second)
 	err := l.connection.SetDeadline(timeout)
 	if err != nil {
@@ -78,7 +78,7 @@ func (l *Logstash) setTimeouts() error {
 	return nil
 }
 
-func (l *Logstash) Write(p []byte) (int, error) {
+func (l *Client) Write(p []byte) (int, error) {
 	if l.connection == nil {
 		if err := l.Connect(); err != nil {
 			return 0, fmt.Errorf("connect to logstash errored: %s", err)
