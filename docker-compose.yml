@@ -1,0 +1,22 @@
+version: '3'
+
+networks:
+  elk:
+
+volumes:
+  elasticsearch:
+    driver: local
+
+services:
+  logstash:
+    container_name: logstash_one_channel
+    image: docker.elastic.co/logstash/logstash:6.3.2
+    networks:
+      - elk
+    environment:
+      XPACK_MONITORING_ENABLED: "false"
+    ports:
+      - 5046:5046
+    volumes:
+      - ./config/pipelines.yml:/usr/share/logstash/config/pipelines.yml:ro
+      - ./config/pipelines:/usr/share/logstash/config/pipelines:ro
