@@ -2,7 +2,6 @@ package logstash
 
 import (
 	"fmt"
-	"log"
 	"net"
 	"time"
 )
@@ -80,27 +79,33 @@ func (l *Logstash) setTimeouts() error {
 }
 
 func (l *Logstash) Write(p []byte) (int, error) {
-	err := fmt.Errorf("tcp conn is nil")
-	if l.connection != nil {
-		n, err := l.connection.Write(p)
-		if err != nil {
-
-			if netErr, ok := err.(net.Error); ok && netErr.Timeout() {
-				l.connection.Close()
-				if err := l.Connect(); err != nil {
-					log.Printf("connection error: %s\n", err)
-					return n, err
-				}
-
-			} else {
-				l.connection.Close()
-				l.connection = nil
-				return n, err
-			}
-		} else {
-			err = l.setTimeouts()
-			return n, nil
+	if l.connection == nil {
+		if err := l.Connect(); err != nil {
+			return 0, fmt.Errorf("connect to logstash errored: %s", err)
 		}
 	}
-	return 0, err
+
+	n, err := l.connection.Write(p)
+	if err != nil {
+
+		if netErr, ok := err.(net.Error); ok && netErr.Timeout() {
+			l.connection.Close()
+			if err := l.Connect(); err != nil {
+				return n, fmt.Errorf("reconnect to logstash errored: %s", err)
+			}
+
+		} else {
+			l.connection.Close()
+			l.connection = nil
+			return n, err
+		}
+	} else {
+		err = l.setTimeouts()
+		if err != nil {
+			return 0, fmt.Errorf("set timeouts errored: %s", err)
+		}
+		return n, nil
+	}
+
+	return 0, fmt.Errorf("write to logstash errored: %s", err)
 }
